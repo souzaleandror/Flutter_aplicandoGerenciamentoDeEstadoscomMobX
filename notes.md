@@ -814,3 +814,287 @@ Pedir ao Flutter que redesenhe apenas um trecho específico de código com o wid
 Concluímos nossa segunda aula! Vejo você a seguir.
 
 Bons estudos!
+
+#### 27/11/2023
+
+@03-Expandindo o MobX
+
+@@01
+Projeto da aula anterior
+
+Você pode acompanhar o passo a passo do desenvolvimento do nosso projeto e, se preferir, pode baixar o projeto da aula anterior.
+Bons estudos!
+
+https://github.com/alura-cursos/2965-gerenciamento-de-estados-mobx/archive/refs/heads/Aula2.zip
+
+@@02
+Desafio
+
+Agora, lançarei um desafio para você: o nosso próximo passo é desenvolver o contador da sacola de compras, localizada na parte inferior do aplicativo.
+Da mesma forma que fizemos o contador (item_store.dart), o desafio é criar o carrinho_store. Os requisitos deste arquivo são:
+
+MobX;
+"Part" para geração de arquivo;
+Classe importada para a aplicação toda;
+Classe privada e abstrata.
+Esta última classe privada e abstrata deve conter:
+
+Observables;
+Actions (funções) de adicionar e remover um item do carrinho.
+Você ainda não precisa implementar essa store na aplicação. O importante é exercitar o processo de gerar o arquivo e criar a estrutura básica de uma store com o MobX.
+
+Após montar o carrinho_store, nos vemos no próximo vídeo!
+
+@@03
+Desafio: a Store do carrinho
+
+Hora da prática!
+Para saber a quantidade de itens no carrinho, nós precisamos atualizar o valor em tela no momento em que um item é adicionado. Para lidar com esses estados, é necessário criar uma Store do carrinho de compras.
+
+Agora é a sua vez! Crie a Store do carrinho, implementando os observáveis e ações necessárias. Caso não saiba por onde começar, você pode conferir a item_store.dart, já que todos os conceitos vistos lá podem ser aplicados nessa nova Store.
+
+Para criar a Store, basta seguir esses passos:
+
+Crie um novo arquivo chamado carrinho_store.dart;
+Faça o import do pacote do MobX;
+Aponte o nome do arquivo que será gerado pelo MobX;
+Crie uma observável do tipo inteiro que vai guardar a quantidade de itens no carrinho;
+E depois crie as ações necessárias para adicionar um item e remover um item.
+Neste primeiro momento, você não precisa implementar a Store no projeto, mas apenas criar sua estrutura.
+
+Você pode conferir o resultado deste desafio através do seguinte commit.
+Qualquer dúvida que você tiver sobre esse exercício, pode nos perguntar no fórum!
+
+https://github.com/alura-cursos/2965-gerenciamento-de-estados-mobx/commit/1d9796c8840de67cab970043b38b8be8f30a2a64
+
+@@04
+Solucionando o desafio da Store do carrinho
+
+Feito o desafio, é hora de conferirmos o resultado. Se você ainda não fez o desafio, agora é a sua chance de saber como criar o carrinho_store.
+O primeiro passo é criar um novo arquivo na pasta "store" clicando sobre ela com o botão direito e selecionando "New File". O nome deste arquivo será carrinho_store.dart.
+
+É importante lembrar que, dentro do Terminal, já estou rodando o build_runner no modo "watch". Se você ainda não fez isso, escreva o seguinte no Terminal:
+
+flutter pub run build_runner watch
+Isso permitirá que você observe as mudanças feitas na store.
+
+Em seguida, importaremos o MobX escrevendo import 'mobx' e selecionaremos a opção package:mobx/mobx.dart da lista.
+
+Atenção: o pacote a ser importado não é o "flutter_mobx", mas o "mobx". O primeiro foi usado nos widgets.
+Após a importação, precisamos indicar qual arquivo será gerado: part 'carrinho_store.g.dart'. Caso você tenha alguma dúvida sobre como montar o arquivo, confira o processo que fizemos na outra store já montada neste curso.
+
+Agora, criaremos a classe que receberá uma classe abstrata privada com o mixing da classe a ser gerada posteriormente:
+
+class CarrinhoStore = _CarrinhoStore with _$CarrinhoStoreCOPIAR CÓDIGO
+Obteremos um erro porque estas classes ainda não existem. Vamos criá-las escrevendo, logo abaixo da linha anterior: abstract class _CarrinhoStore with Store{}.
+
+Dentro desta classe abstrata, precisamos inserir as informações para que o MobX consiga gerar o arquivo. Primeiro, precisamos de uma variável que será observada a partir das mudanças que faremos na aplicação, ou seja, o observável.
+
+Essa variável precisa da annotation @observable. Em seguida, podemos declarar um inteiro (int), já que contaremos a quantidade de carrinhos. Chamaremos a variável de quantidadeCarrinho, a qual será iniciada em zero.
+
+Ainda dentro da classe abstrata, criaremos as duas ações que aumentarão e diminuirão a quantidade de itens no carrinho. Usaremos a annotation @action, escrevendo void e acrescentando o nome da função (adicionaCarrinho()). Em seguida, escreveremos quantidadeCarrinho++.
+
+A segunda ação será a de remover, com a mesma estrutura. Acrescentaremos a annotation @action e escreveremos void na linha seguinte. Chamaremos esta ação de removeCarrinho() e escreveremos quantidadeCarrinho-- na última linha. A seguir o código completo:
+
+abstract class _CarrinhoStore with Store{
+    @observable
+    int quantidadeCarrinho = 0;
+
+    @action
+    void adicionaCarrinho() {
+        quantidadeCarrinho++;
+    }
+
+    @action
+    void removeCarrinho() {
+        quantidadeCarrinho--;
+    }
+}COPIAR CÓDIGO
+Se estivermos com o build_runner watch rodando, o arquivo será gerado automaticamente após salvarmos as alterações. Assim, evitamos ter que voltar ao Terminal e rodar o arquivo novamente. Perceba que já foi criado um novo arquivo chamado "carrinho_store.g.dart" na pasta "store".
+
+Agora, a classe CarrinhoStore não exibe mais erro por encontrar o arquivo carrinho_store.g.dart. O nosso próximo passo será implementá-lo no projeto. Vamos lá!
+
+@@05
+Carrinho é global
+
+O nosso carrinho_store já está criado. Agora, a pergunta é: onde ele será usado e implementado?
+O número que exibe a quantidade de itens no carrinho deve ficar na Home, ao lado do botão na parte inferior da tela que exibe o ícone da sacola de compras. É aqui que usaremos o nosso observável.
+
+Já as ações ficarão no próprio botão de contador, abaixo de cada item disponível para compra. Assim, quando apertarmos o botão para adicionar ou excluir um item da sacola, a ação correspondente será executada.
+
+Com isso, percebemos que será preciso usar o store em locais diferentes. No entanto, se compararmos ao que fizermos com o contador, perceberemos que uma única instância foi criada separadamente para cada item. Desse modo, nenhuma ação influenciará a de outro cartão.
+
+Mas e se quisermos um valor global para a aplicação? Poderíamos usar um InheritedWidget e passar o store para cada widget utilizado. No entanto, existe uma maneira mais fácil e recomendável para lidar com essa situação: usando o Provider. O Provider é uma ferramenta recomendada para uso em conjunto com o MobX.
+
+Se acessarmos o arquivo "pubspec.yaml", encontraremos a indicação da instalação do provider como uma dependência. Para prosseguirmos, é importante que esta dependência esteja instalada no seu projeto.
+
+Por meio do Provider, conseguiremos criar este store globalmente e a nossa aplicação conseguirá utilizar essa mesma referência. Além disso, usaremos o Provider para transmitir as informações do carrinho a outras páginas. Assim, implementaremos o Provider com o MobX.
+
+
+@@06
+Implementando MobX e Provider
+
+O próximo passo é implementar o Provider com o MobX. Lembrando que precisamos acessar a classe CarrinhoStore em toda a aplicação, pois ela será usada globalmente.
+Para permitir isso, acessaremos o arquivo "main.dart", englobaremos o widget de Home com o Provider, passando o CarrinhoStore. Dentro dos colchetes de Widget build, substituiremos o trecho home: Home() por home: Provider(create: ()). O create será uma função anônima que deve receber algum contexto.
+
+Como não usaremos um contexto por enquanto, podemos passar um underline (_) como parâmetro. Em seguida, usaremos uma arrow function (=>) para indicar o que será passado via Provider, ou seja, o CarrinhoStore(). Na sequência, indicaremos para quem as informações serão enviadas (o child), que corresponde à Home().
+
+O resultado é o seguinte:
+
+// Trecho de código suprimido
+
+home: Provider(create: (_) => CarrinhoStore(), child: Home()),
+
+// Trecho de código suprimidoCOPIAR CÓDIGO
+Salvaremos estas alterações no arquivo "main.dart". Isso permite à Home receber o nosso CarrinhoStore. Abriremos o arquivo da Home em "screens > home.dart" e observaremos o texto que exibe a quantidade de itens presentes na sacola de compras ("0") na linha 59, inserida dentro dos parênteses de Padding().
+
+É aqui que precisamos inserir o nosso observável. Mas, antes, receberemos o carrinhoStore dentro do Provider. Pressionaremos a tecla "Enter" para pular uma linha após Widget build e chamaremos final carrinhoStore = Provider.of(context).
+
+Nessa hora, ocorrerá um erro indicando que Provider não foi importado. Para resolver o problema, clicaremos com o botão direito sobre Provider e selecionaremos a opção "import library 'package:provider/provider.dart'".
+
+Importado o Provider, podemos passar um listen dentro dos parênteses de Provider.of() para indicar que queremos ouvir mudanças e mandá-las para toda a aplicação. Como não haverá mudanças no carrinhoStore, atribuiremos o valor false ao listen.
+
+É importante também apontarmos o tipo de Provider que estamos recebendo. Assim, podemos atribuir o tipo <CarrinhoStore> a ele após o .of. Dessa forma, ele saberá como lidar com a informação recebida via Provider. É como se informássemos que o tipo do carrinhoStore a ser recebido é do tipo CarrinhoStore.
+
+O resultado é o seguinte:
+
+final carrinhoStore = Provider.of<CarrinhoStore>(context, listen: false);
+
+Feito isso, voltaremos à linha que exibe o texto com o número de itens no carrinho e o substituiremos por uma interpolação ${} com carrinhoStore.
+
+Agora, já temos acesso às funções e à variável de quantidade no carrinho. Então, escreveremos carrinhoStore.quantidadeCarrinho dentro das chaves. A linha completa ficou da seguinte forma:
+
+${carrinhoStore.quantidadeCarrinho},
+
+Salvaremos o arquivo "home.dart" e aparentemente tudo deu certo. Como ainda não implementamos as ações no contador, o valor do carrinho não será alterado na interface.
+
+Agora, precisamos implementar as funcionalidades de adicionar e remover itens da sacola de compras no arquivo "contador.dart". Pressionaremos a tecla "Enter" para abrir uma nova linha após Widget build(BuildContext context){.
+
+Repetiremos o código que digitamos em "home.dart": final carrinhoStore = Provider.of<CarrinhoStore>(context, listen: false);.
+
+Do mesmo modo, importaremos o CarrinhoStore e o Provider clicando com o botão direito sobre cada um deles e selecionando, respectivamente, "import library '.../store/carrinho_store.dart'" e "import library 'package:provider/provider.dart'". Com isso, obtemos acesso ao carrinhoStore dentro do contador.
+
+Dentro dos parênteses do primeiro InkWell, encontramos uma condicional if que possui um removerItem. Pressionaremos a tecla "Enter" para abrir uma linha logo abaixo dele e acrescentar: carrinhoStore.removeCarrinho().
+
+No segundo InkWell, mais abaixo, abriremos uma nova linha abaixo de itemStore.adicionaItem() e escreveremos carrinhoStore.adicionaCarrinho().
+
+Feito isso, salvaremos as alterações no arquivo "contador.dart" e faremos o teste na interface adicionando um item qualquer no carrinho. Nesse momento, a sacola não sofre nenhuma modificação. Isso ocorre porque não colocamos a widget de observer no MobX em "home.dart".
+
+Por enquanto, só usamos a store, recebemos as suas informações, mas o widget ainda não está sendo observado. Falta indicar ao Flutter que alguns trechos de código precisam ser redesenhados na tela.
+
+Para resolver o problema, voltaremos ao arquivo "home.dart" e desceremos no código até a linha que exibe child: InkWell dentro de SliverfillRemaining().
+
+Aqui, temos duas opções: podemos envolver o SliderfillRemaining() ou envolver apenas o InkWell(). Não existe muita diferença entre as duas. Por isso, englobaremos o InkWell com um widget usando o atalho "Ctrl + ." e selecionando a opção "Wrap with widget".
+
+O widget utilizado será o Observer, que vem do flutter_mobx. Na linha imediatamente acima ao InkWell(), substituiremos a palavra widget por Observer. O trecho ficará da seguinte forma:
+
+// Trecho de código suprimido
+
+alignment: Alignment.bottomCenter,
+child: Observer(
+    child: InkWell(
+
+// Trecho de código suprimidoCOPIAR CÓDIGO
+Poderemos observar que ele fez o import automaticamente no topo. Caso isso não tenha acontecido, é possível importar manualmente o pacote flutter_mobx.dart. Lembrando que este não é o mesmo pacote que o mobx.dart.
+
+O Observer precisa receber um build. Por isso, substituiremos o child na linha logo abaixo por builder. Já o builder precisa receber uma função anônima com algum tipo de contexto.
+
+Como não estamos usando contextos por enquanto, podemos utilizar um underline (_). Em seguida, passaremos uma arrow function para indicar que o que será buildado é o InkWell e o restante do código. O trecho atualizado ficou da seguinte forma:
+
+// Trecho de código suprimido
+
+alignment: Alignment.bottomCenter,
+child: Observer(
+    builder: (_) => InkWell(
+
+// Trecho de código suprimidoCOPIAR CÓDIGO
+Salvaremos o arquivo "home.dart" e perceberemos que, no emulador, a interface foi atualizada de modo que nenhum item esteja selecionado. No entanto, a sacola apresenta um número de itens diferente de zero.
+
+Se adicionarmos ou excluirmos novos itens de Chicken Salad, a sacola modifica a quantidade como se já houvesse outros itens adicionados lá.
+
+Isso nos mostra que, quando trabalhamos com estados, é importante reiniciar a aplicação. No entanto, não precisa ser um build novo. Podemos usar o botão "Hot Restart" (ícone de uma seta em forma de círculo), no canto superior direito da tela.
+
+Se apertarmos o Hot Restart uma vez, o número ao lado do ícone da sacola voltará a ser zero. Acrescentando novos itens na sacola, observaremos que agora a contagem está correta.
+
+Com isso, conseguimos implementar o nosso carrinho_store na Home e no nosso contador usando o Provider. Vejo você no próximo vídeo!
+
+@@07
+MobX e Provider?
+
+Às vezes pode parecer estranho utilizar várias bibliotecas em conjunto ao invés de apenas uma.
+Em nosso projeto, utilizamos o pacote Provider para resolver uma grande questão de estados que apenas o MobX não conseguiu resolver.
+
+Qual é a principal vantagem de usar o Provider em conjunto com o MobX para solucionar o nosso problema?
+
+Facilita o compartilhamento de estados em várias partes do código, pois não precisamos lidar com Inherited widgets.
+ 
+Exatamente! Utilizando o Provider junto com o MobX, é possível compartilhar estados de forma mais fácil entre diferentes widgets e partes do aplicativo.
+Alternativa correta
+Aumenta o desempenho do aplicativo, pois escrevemos menos linhas de código.
+ 
+Alternativa correta
+Diminui o tamanho do código, pois o MobX gera os arquivos e nós não precisamos lidar com eles.
+ 
+Alternativa correta
+Torna o código mais legível, pois escrevemos menos linhas de código.
+
+@@08
+Para saber mais: MobX feat. Provider
+
+Nesta aula, nos deparamos com um problema cuja solução mais simples e otimizada seria a utilização do Provider em conjunto com o MobX.
+O Provider também é um gerenciador de estados muito utilizado e, geralmente, uma base importante para aprender os diversos gerenciadores em Flutter.
+
+Um completa o outro!
+O problema que nós encontramos é que apenas com o MobX, não conseguimos acesso global de todos os estados que existem na aplicação… e está tudo bem! Como já existem ferramentas consolidadas no mercado para resolver esse problema, o MobX se foca em resolver outras coisas - como os estados.
+
+A ideia é que cada biblioteca resolva um problema específico sem interferir no trabalho da outra, mas, sim, complementando. Provider é utilizado também como gerenciador de estados, porém não é sua função principal.
+
+Portanto, usamos aquilo em que o Provider é muito bom em fazer (a injeção de dependências) em conjunto com o que o MobX é excelente (lidar com estado).
+
+Quero entender mais sobre Provider - como faço?
+Se quiser saber mais, acesse este curso que trata especificamente do Provider.
+
+Bons estudos!
+
+https://cursos.alura.com.br/course/flutter-gerenciamento-de-estados-provider
+
+@@09
+Faça como eu fiz: implementando Provider no MobX
+
+Hora da prática!
+Agora é a sua vez de implementar a funcionalidade de carrinho dentro do projeto! Para fazer a implementação, é importante seguir alguns passos:
+
+Primeira parte - Criando a store
+Crie a nova Store chamada carrinho_store.dart;
+Dentro de carrinho_store.dart, coloque as seguintes informações:
+A variável inteiro observável quantidadeCarrinho;
+As duas ações para incrementar e decrementar a observável quantidadeCarrinho;
+Não se esqueça de rodar o comando no terminal flutter pub run build_runner watch para gerar o arquivo!
+Segunda parte - Implementando o provider
+No arquivo main.dart, implemente o Provider passando a nossa nova Store CarrinhoStore();
+No arquivo home.dart, crie uma nova instância de CarrinhoStore() que estamos recebendo pelo Provider;
+Com essa nova instância criada, substitua o texto “0” do widget que mostra a quantidade de itens no carrinho para utilizar a nossa observável quantidadeCarrinho;
+Não se esqueça de “abraçar” todo o widget Inkwell com o widget Observer;
+No arquivo contador.dart, crie uma nova instância de CarrinhoStore() que estamos recebendo do Provider;
+Chame as duas ações de incremento e decremento nos devidos Inkwell;
+Vamos lá?
+
+Caso queira conferir o resultado desta aula, você pode acessar os seguintes commits:
+Parte 1;
+Parte 2.
+Bateu uma dúvida ou dificuldade? Chame a gente lá no fórum ou no discord!
+
+https://github.com/alura-cursos/2965-gerenciamento-de-estados-mobx/commit/1d9796c8840de67cab970043b38b8be8f30a2a64
+
+https://github.com/alura-cursos/2965-gerenciamento-de-estados-mobx/commit/ded9e61db93263beabf64bb312d682a63feaa218
+
+@@10
+O que aprendemos?
+
+Nessa aula, você aprendeu como:
+Reconhecer algumas limitações do MobX. Ou, melhor dizendo, reconhecer no que ele é bom de fazer (gerenciamento de estados) e quando podemos utilizar outra ferramenta;
+Identificar possibilidades de integração com outras bibliotecas para solucionar problemas específicos, utilizando o melhor de cada uma;
+Implementar o Provider em conjunto com o MobX para disponibilizar informações de forma global no app.
+Concluímos nossa terceira aula! Vejo você a seguir.
+
+Bons estudos!
