@@ -1098,3 +1098,523 @@ Implementar o Provider em conjunto com o MobX para disponibilizar informações 
 Concluímos nossa terceira aula! Vejo você a seguir.
 
 Bons estudos!
+
+
+#### 28/11/2023
+
+@04-Incrementando o projeto
+
+@@01
+Projeto da aula anterior
+
+Você pode acompanhar o passo a passo do desenvolvimento do nosso projeto e, se preferir, pode baixar o projeto da aula anterior.
+Bons estudos!
+
+https://github.com/alura-cursos/2965-gerenciamento-de-estados-mobx/archive/refs/heads/Aula3.zip
+
+@@02
+Listas e MobX
+
+Até o momento, salvamos apenas a quantidade de itens dentro da nossa sacola - e não quais os itens são realmente salvos na sacola.
+O item é uma informação importante para fazer o cálculo do total da compra, ou seja, o quanto gastamos - já que as informações de preço estão contidas dentro do item.
+
+Para passar essas informações para a página de checkout precisamos saber quais são os itens que selecionamos. Por isso, precisamos fazer algumas modificações no carrinho_store.dart.
+
+Listando os itens da sacola
+Em "lib > store > carrinho_store.dart", ao invés de salvar um inteiro com a quantidade de carrinho, vamos salvar uma lista de itens.
+
+Por isso, vamos substituir a declaração da variável quantidadeCarrinho por uma lista do tipo Item que vai se chamar listaItem. Ela vai ser inicializada com uma lista do tipo Item vazia.
+
+Agora, vamos fazer a importação automática de Item do arquivo item.dart da pasta "models".
+
+carrinho_store.dart:
+import 'package:mobx/mobx.dart';
+
+import '../models/item.dart';
+
+part 'carrinho_store.g.dart';
+
+class CarrinhoStore = _CarrinhoStore with _$CarrinhoStore;
+
+abstract class _CarrinhoStore with Store {
+  @observable
+  List<Item> listaItem = <Item>[];
+
+// código omitido…COPIAR CÓDIGO
+Agora, no adicionaCarrinho() e removeCarrinho(), precisamos passar um item para saber qual item vai ser adicionado ou removido.
+
+Por isso, a função adicionaCarrinho vai receber uma variável Item do tipo item como parâmetro. Ao invés de usar quantidadeCarrinho++, vamos usar listaItem.add(), passando nosso item.
+
+Da mesma maneira, a função removeCarrinho() vai receber uma variável Item do tipo item como parâmetro. Ao invés de usar quantidadeCarrinho--, vamos usar listaItem.remove(), passando nosso item.
+
+  @action
+  void adicionaCarrinho(Item item) {
+    listaItem.add(item);
+  }
+
+  @action
+  void removeCarrinho(Item item) {
+    listaItem.remove(item);
+  }COPIAR CÓDIGO
+Salvamos o arquivo carrinho_store.dart para gerar o arquivo de extensão g.dart. Caso você não tenha o build_runner watch rodando, o comando é:
+
+flutter pub run build_runner watchCOPIAR CÓDIGO
+Com isso, vai gerar novamente os arquivos toda vez que houver uma mudança dentro deles.
+
+Contando os itens da lista
+Agora que temos nosso listaItem conseguimos adicionar e remover um item. Porém, perdemos nosso contador. Com isso, não sabemos a quantidade de itens que temos… será?
+
+Na verdade, podemos pegar o tamanho dessa lista. Toda vez que atualizamos a lista, seu tamanho será alterado.
+
+Para isso, pegamos o length da lista e usá-lo como quantidade de valor para o nosso botão de ver carrinho.
+
+Vamos começar com o nosso contador em "lib > componentes > contador.dart". Nosso contador está triste porque não tem um item para contar.
+
+Contudo, na mesma pasta do widget de contador, temos o cartao.dart. O cartão já recebe um item, porque assim preenche com as informações de título do cartão, valor e imagem.
+
+Como já recebemos essas informações, podemos simplesmente passar dentro do Contador() um item: item na linha 40 de cartao.dart. Depois, salvamos o arquivo.
+
+cartao.dart:
+class Cartao extends StatelessWidget {
+const Cartao({ Key? key, required this.item }) : super(key: key);
+final Item item;
+
+  @override
+  Widget build(BuildContext context){
+    return Card(
+
+// código omitido…
+
+                  Contador(item: item),
+
+// código omitido…COPIAR CÓDIGO
+Porém, o nosso contador ainda não está pronto para receber esse item.
+
+Vamos ao arquivo contador.dart dizer que o Contador precisa receber dentro do construtor, além da key, um required this.item.
+
+Como ainda não temos um item, abaixo do final da linha 10, vamos criar um novo final de Item item.
+
+Em seguida, vamos importar automaticamente o model de item.
+
+contador.dart:
+import '../models/item.dart';
+import '../store/carrinho_store.dart';
+
+class Contador extends StatelessWidget {
+Contador({ Key? key, required this.item }) : super(key: key);
+  final ItemStore itemStore = ItemStore();
+  final Item item;
+
+//código omitido…COPIAR CÓDIGO
+Agora, nosso contador recebe um item. Porém, ainda precisa passar algumas informações para as funções de removeCarrinho() e adicionaCarrinho(). O que precisamos passar literalmente o item que acabamos receber.
+
+Por isso, vamos passar item como parâmetro para removeCarrinho() na linha 26 e também para adicionaCarrinho() na linha 37.
+
+  @override
+  Widget build(BuildContext context){
+    final carrinhoStore = Provider.of<CarrinhoStore>(context, listen: false);
+    return Observer(
+
+// código omitido…
+
+            onTap: () {
+              if (itemStore.valorContador > 0) {
+                itemStore.removerItem();
+                carrinhoStore.removeCarrinho(item);
+              }
+
+// código omitido…
+
+            onTap: () {
+              itemStore.adicionaItem();
+              carrinhoStore.adicionaCarrinho(item);
+            },
+
+// código omitido…COPIAR CÓDIGO
+Ainda temos um problema na home em "lib > screens > home.dart", porque se espera uma variável quantidadeCarrinho que não existe mais.
+
+Na linha 64, vamos substituir quantidadeCarrinho pela listaItem.length. Com isso, temos agora o valor do tamanho dessa lista.
+
+home.dart:
+// código omitido…
+
+                                      child: Text(
+                                        "${carrinhoStore.listaItem.length}",
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          color: 
+                                            Theme.of(context).colorScheme.onPrimary),
+
+// código omitido…COPIAR CÓDIGO
+Após salvar o arquivo de home, vamos resetar a aplicação, clicando no ícone "Restart" na barra de ferramentas no canto superior direito do VSCode. Atente-se, será um hot restart e não será um hot reload.
+
+No emulador Android da aplicação, vamos adicionar dois "chicken salad" e 4 "cold noodles". Mas, a quantidade de itens na sacola de compra não é alterada.
+
+Para verificar se existe algum problema, voltamos ao arquivo contador.dart. Dentro do botão de remover itens, vamos adicionar uma nova linha para fazer esse teste.
+
+No nosso caso, na linha 27, vamos colocar um print() para observar o que acontece com o carrinhoStore.listaItem.length. Será que não é adicionado um item na lista?
+
+contador.dart:
+// código omitido…
+
+            onTap: () {
+              if (itemStore.valorContador > 0) {
+                itemStore.removerItem();
+                carrinhoStore.removeCarrinho(item);
+                print(carrinhoStore.listaItem.length);
+              }
+
+// código omitido…COPIAR CÓDIGO
+Após salvar o arquivo, vamos abrir o terminal e mudar a aba para "debug console". No emulador, a sacola já contém alguns itens. Adicionamos quatro "chicken salad" e depois removemos um "chicken salad".
+
+I/flutter (12330): 12
+I/flutter (12330): 11
+Note que aparece o valor no debug console. No nosso caso, o valor sobe para 12 e depois desce para 11. Então, o que está acontecendo?
+
+No próximo vídeo, vamos entender melhor o que é esse problema e como ele ocorre.
+
+@@03
+ObservableList
+
+Vamos recapitular qual era o nosso problema. Colocamos uma função de print() dentro do nosso contador.dart para entender o que tem dentro da listaItem. Para verificar se a listaItem é realmente modificada quando adicionamos ou removemos um item do carrinho.
+Porque, temos um problema na home, quando pegamos o valor da sacola através do listaItem.length dentro do carrinhoStore.
+
+Reiniciamos a aplicação ao clicar no ícone de "Restart" na barra de ferramentas para zerar todos os estados. No emulador, adicionamos 8 "chicken salad" e depois removemos 1.
+
+Dentro do "chicken salad" aparecem 7 itens, assim como no debug console do VSCode.
+
+I/flutter (12330): 7
+Então, por que a quantia da sacola não é alterada?
+
+É uma resposta complexa relacionada a como a lista funciona e como o MobX repara nas mudanças que acontecem dentro do código.
+
+Em carrinho_store.dart, a listaItem não está sendo realmente modificada.
+
+Anteriormente, utilizamos a soma para a quantidade de itens. Isso significa que era somado mais 1 a um item que já tínhamos, ou seja, fazíamos uma reatribuição do valor daquela variável.
+
+Agora, colocamos uma lista nova que contém um item novo. Em outras palavras, temos uma lista que já foi criada e instanciada e utilizamos uma função da própria lista para adicionar outro item dentro dela.
+
+Com isso, a lista em si não foi modificada, pois não criamos uma nova instância e a atribuímos dentro da que já existe. Por isso, o MobX não consegue reconhecer que houve uma mudança dentro dessa lista e não consegue notificar o flutter sobre a alteração de valor da lista.
+
+Lidando com listas no MobX
+O que precisamos fazer é usar uma função específica do MobX para lidar com listas.
+
+Na declaração de listaItem em "lib > store > carrinho_store.dart", ao invés de ser uma lista do tipo <Item> vazia, vamos passar um ObservableList().
+
+Em seguida, passamos qual o tipo da lista na frente de ObservableList. No nosso caso, é uma lista de tipo <Item>.
+
+carrinho_store.dart:
+abstract class _CarrinhoStore with Store {
+  @observable
+  List<Item> listaItem = ObservableList<Item>();
+
+// código omitido…COPIAR CÓDIGO
+Com isso, o listaItem continua a ser uma lista, mas agora é uma ObservableList que o MobX presta atenção. Se não houver mudanças como a criação de uma nova instância ou atribuição, o MobX vai procurar por mudanças dentro da lista. Por exemplo, se existe um novo valor ou item. Dessa maneira, ele consegue notificar todo mundo que observa essa lista.
+
+Após salvar o código, é preciso esperar para regerar o carrinho_store.g.dart. Podemos conferir as alterações dentro do terminal.
+
+Vamos fazer um hot restart para reiniciar todos os estados da aplicação. No emulador, adicionamos três "chicken salad". Percebemos que a sacola volta a funcionar, pois o número à esquerda do ícone da sacola atualiza para 3.
+
+Agora, a nossa sacola realmente adiciona itens. Não só o número dos itens, mas os itens. Dessa forma, podemos fazer contas e pegar o total da compra para mostrar dentro do "ver carrinho". Temos mais de liberdade para trabalhar com o carrinho_store.
+
+@@04
+Listas do MobX
+
+Em nosso projeto, percebemos que era necessário solucionar um problema do aplicativo: os itens são adicionados no carrinho, no entanto, o valor total de itens continuava zero.
+Vimos que esse problema poderia ser resolvido mexendo com listas.
+
+Selecione as técnicas verdadeiras que praticamos nesta implementação:
+
+Para atualizar listas com o MobX, podemos usar o seguinte código no arquivo de carrinho:
+@observable
+List<Item> listaItem = ObservableList<Item>();
+Esse código inicializa a lista vazia de uma forma que o MobX consiga observar por mudanças no seu conteúdo.
+ 
+É isso mesmo! Parabéns! Precisamos do ObservableList<Item>() para que o MobX consiga observar as mudanças.
+Alternativa correta
+Podemos usar o length para criar uma lista dinâmica com os produtos adicionados no carrinho. Esse length é responsável por armazenar o tamanho da lista, ou seja, o número de produtos pegos. Um exemplo desse código é:
+List<Item> listaItem = List(Item item);
+
+@action
+void adicionaCarrinho(Item item) {
+    listaItem.length++;
+}
+ 
+Na verdade length apenas devolve um valor inteiro com a quantidade de elementos dentro da lista.
+Alternativa correta
+Para atualizar listas com o MobX, podemos usar o seguinte código no arquivo de carrinho:
+@observable
+List<Item> listaItem = <Item>[];
+Esse código inicializa a lista vazia. Em seguida, precisamos também passar length e Item nas funções de adicionar e remover produtos para que o MobX identifique a mudança na lista e atualize a tela.
+ 
+Desta maneira, o MobX não consegue verificar se houve alguma mudança na estrutura da lista.
+Alternativa correta
+Para resolver o problema - o MobX não consegue identificar atualização na lista -, precisamos fazer duas coisas:
+1) Passar um ItemStore nas funções adicionarCarrinho e removeCarrinho;
+2) Inserir um @observable nessas duas funções para que o MobX fique sabendo da alteração da lista e atualize a tela.
+ 
+Na verdade as funções adicionarCarrinho e removeCarrinho já são ações da ItemStore. Também não precisamos passar uma observável como parâmetro, já que as ações já alteram os valores de observáveis.
+
+@@05
+Computed
+
+Para pegar a quantidade de itens dentro da nossa sacola, podemos utilizar outro tipo de observável chamado computed.
+O computed observa por mudanças dentro da variável. Mas, em vez de precisar de actions para poder alterar o seu valor e estado, podemos utilizar como condição o estado de outros observáveis.
+
+Observável condicional
+Por exemplo, no arquivo carrinho_store.dart, temos o listaItem. Podemos dizer para atualizar o valor de outro observável toda vez que listaItem for modificado.
+
+Para isso, depois da notation @observable, vamos adicionar a notation @computed.
+
+Esse computed vai ser um inteiro chamado quantidadeItem, assim como nossa antiga variável. Ao invés de inicializá-lo com 0 e precisar de uma action para modificá-lo, vamos passar o listaItem.length através de uma arrow function.
+
+Mas, para fazer essa atribuição, faltou uma palavra-chave. Devemos colocar a função get, após int e antes de quantidadeItem. Com isso, vamos pegar a quantidade de itens baseado na mudança do listaItem.length.
+
+carrinho_store.dart:
+abstract class _CarrinhoStore with Store {
+  @observable
+  List<Item> listaItem = ObservableList<Item>();
+
+  @computed
+  int get quantidadeItem => listaItem.length;
+
+// código omitido…COPIAR CÓDIGO
+É uma maneira mais fácil de pegar a quantidade de itens, afinal não precisamos criar inicializar uma quantidade de itens com valor zero para depois criar uma action para adicionar e remover a quantidade de itens. Só necessitamos criar um observável do tipo computed que observa por mudanças do listaItem.length.
+
+Se o listaItem.length for modificado, será devolvido o valor novo e notificado todo o lugar que utiliza a variável quantidadeItem.
+
+Isso é o que chamamos de observável condicional. A condição é a mudança de outros observáveis dentro da aplicação.
+
+Vamos salvar o carrinho_store.dart e conferir a saída do flutter pub run build_runner no terminal para saber se terminou de fazer o build.
+
+Agora, vamos até a linha 64 do arquivo home.dart. Vamos passar a nova variável quantidadeItem para carrinhoStore ao invés de passar o listaItem.length.
+
+home.dart:
+// código omitido…
+
+                                      child: Text(
+                                        "${carrinhoStore.quantidadeItem}",
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          color: 
+                                            Theme.of(context).colorScheme.onPrimary),
+
+// código omitido…COPIAR CÓDIGO
+Após salvar a home, vamos fazer um hot restart da aplicação para zerar todos os estados da aplicação.
+
+No emulador, adicionar 4 "chicken salad". O comportamento não é mudado, como esperado. Ainda conseguimos remover e adicionar itens.
+
+A diferença é que com o jeito que fizemos nos poupamos de criar actions para adicionar e remover um item ao alterar o observável de quantidadeItem, pois usamos a condição da listaItem.length.
+
+Para finalizar, vamos apagar a linha 27 do arquivo contador.dart para deixar o código mais limpo. Nela, tínhamos um print somente para verificar se o listaItem.length retornava alguma modificação.
+
+contador.dart:
+// código omitido…
+
+            onTap: () {
+              if (itemStore.valorContador > 0) {
+                itemStore.removerItem();
+                carrinhoStore.removeCarrinho(item);
+              }
+
+// código omitido…COPIAR CÓDIGO
+Com isso, enceramos o nosso contador. O próximo passo será brincar com o computed e com as condições. Até o próximo vídeo.
+
+@@06
+Para saber mais: aprofundando no Computed
+
+A observável do tipo computed é muito interessante e disponibiliza para nós ferramentas para lidar com mais de uma observável ao mesmo tempo. Ela também é conhecida como observável condicional e, nesse caso, ela tem algum tipo de retorno baseado em uma (ou mais de uma) observável. Ela até pode ser considerada uma função.
+Veja o exemplo a seguir:
+
+import 'package:mobx/mobx.dart';
+
+part 'contato.g.dart';
+
+class Contato = _ContatoBase with _$Contato;
+
+abstract class _ContatoBase with Store {
+  @observable
+  String nome;
+
+  @observable
+  String sobrenome;
+
+  @computed
+  String get nomeCompleto => '$nome, $sobrenome';
+
+}
+COPIAR CÓDIGO
+Neste exemplo, temos uma observável do tipo String chamada nomeCompleto. Em seguida, acessamos o seu valor, ou melhor, temos um retorno do seu valor através da palavra chave get antes do nome da variável. Então, podemos acessar seu valor em um widget de texto (por exemplo) como faríamos normalmente com qualquer outra observável.
+
+As observáveis condicionais (computed) não precisam de ações para ter seu valor alterado. A condição de mudança da nossa variável nomeCompleto vem das mudanças da outras duas observáveis. Portanto, se alguma das variáveis nome ou sobrenome mudarem, a variável nomeCompleto terá seu valor atualizado e refletido na tela do dispositivo.
+
+Muito legal né?! Se quiser saber mais sobre a observável condicional computed, você pode acessar a documentação oficial do MobX.
+
+https://mobx.netlify.app/concepts#computed-observables
+
+@@07
+Deixando o carrinho dinâmico com Computed
+
+Uma feature bem interessante que podemos implementar utilizando observáveis condicionais é fazer o botão de ver carrinho sumir quando não tiver nenhum item selecionado, isto é, dentro da sacola.
+Essa funcionalidade impediria que a pessoa vá para a página de checkout sem nenhum item para pagar, por exemplo. Mas, como vamos fazer isso?
+
+Observando se a lista está vazia
+Precisamos criar uma nova observável do tipo computed no arquivo em "lib > store> carrinho_store.dart" após o primeiro computed.
+
+É importante saber se o carrinho está vazio. Será que sim ou não? Por isso, vamos receber um booleano e compará-lo com o estado de algum outro observável. Nesse caso, também vai ser listaItem.
+
+Para isso, após bool, vamos utilizar o get e chamar o observável de listaVazia, pois vamos queremos observar se a lista está vazia.
+
+Vamos conferir se a lista está vazia com uma arrow function seguido do listaItem devolvendo isEmpty.
+
+Não precisamos comparar se o length (tamanho) está zero, pois isEmpty retorna um booleano para verdadeiro caso esteja vazio, caso contrário é retornado falso.
+
+carrinho_store.dart:
+// código omitido…
+
+abstract class _CarrinhoStore with Store {
+  @observable
+  List<Item> listaItem = ObservableList<Item>();
+
+  @computed
+  int get quantidadeItem => listaItem.length;
+
+  @computed
+  bool get listaVazia => listaItem.isEmpty;
+
+// código omitido…COPIAR CÓDIGO
+Com isso, conferimos se a lista está vazia. Se a lista está vazia, nosso retorno para dentro do listaVazia vai ser true (verdadeiro), pois é uma afirmação verdadeira. É importante ter isso claro quando criamos a condição dentro da home.
+
+Após salvar o arquivo carrinho_store.dart, já foi gerado um novo arquivo como podemos conferir no terminal.
+
+[INFO] Succeeded after 185ms with 2 outputs (9 actions)
+Já foi completado, podemos implementar agora dentro de "lib > screens > home.dart".
+
+Mostrando InkWell se a lista não está vazia
+Para fazer essa condição de quando criar o InkWell, podemos ir até a linha 42 do arquivo home.dart onde temos o Observer que tem o builder.
+
+Lembre-se que para poder observar mudanças o observável precisa estar dentro de um widget Observer. Nesse caso, é o InkWell.
+
+Queremos desenhar esse InkWell em uma condição específica - que é quando a lista não está vazia.
+
+Depois do builder, vamos apertar "Enter" para que o InkWell fique em uma nova linha.
+
+Em seguida, vamos criar um if ternário antes de InkWell. Para isso, digitamos a variável carrinhoStore, ponto, listaVazia. Com isso, vai ser retornado verdadeiro ou falso.
+
+Queremos mostrar o InkWell caso a lista não esteja vazia. Então, antes de carrinhoStore, vamos acrescentar uma exclamação para informar que queremos o oposto. Ou seja, se a lista está vazia, não queremos mostrar o InkWell.
+
+Com isso, podemos acrescentar um sinal de interrogação após listaVazia. Assim, se lista não está vazia, vai nos devolver o InkWell.
+
+Se a lista está vazia, deve nos devolver um contêiner. Para isso, vamos até o fechamento do InkWell, onde está apontando um erro.
+
+Após seu fechamento e antes da vírgula, ainda na mesma linha, vamos colocar o sinal de dois-pontos e retornar um Container().
+
+home.dart:
+// código omitido…
+
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: Align(
+                alignment: Alignment.bottomCenter,
+                child: Observer(
+                  builder: (_) => 
+                  !carrinhoStore.listaVazia ? InkWell(
+                    onTap: () {
+
+// código omitido…
+
+                                ), // Text
+                              ), // Align
+                            ])), // Stack // Ink
+                  ) : Container(), // InkWell
+                ), // Observer
+              ), // Align
+            ) //SilverFillRemaining
+
+// código omitido…COPIAR CÓDIGO
+Vamos repetir o que foi feito. Criamos um if ternário logo no começo do InkWell para confirmar se a lista dentro do carrinhoStore está vazia.
+
+Se sim, não queremos fazer nada e vai mostrar somente um contêiner. Mas, se a lista não estiver vazia, podemos imprimir o nosso InkWell.
+
+Podemos salvar o home.dart e reiniciar todos os estados da aplicação com um hot restart.
+
+Repare como o botão de InkWell não aparece mais no emulador, já que a lista começa vazia.
+
+Para verificar o funcionamento, vamos adicionar 1 "chicken salad". Com isso, o botão vermelho "ver carrinho" aparece novamente na parte inferior do app. Se retiramos todos os itens do carrinho novamente, o botão volta a desaparecer.
+
+Tudo isso fizemos com a utilização das nossas observáveis condicionais do tipo computed.
+
+Nosso próximo passo é calcular o total da nossa compra, utilizando todos os itens disponíveis. Até o próximo vídeo.
+
+@@08
+Computed
+
+Com a utilização do MobX, as pessoas desenvolvedoras podem utilizar o @computed para melhorar a performance de suas aplicações.
+Como você viu, o @computed é uma função que retorna um valor calculado a partir de observáveis, e é muito útil quando precisamos fazer cálculos ou operações complexas com os dados observados. Ele também é conhecido como observável condicional.
+
+Qual das alternativas abaixo explica melhor o @computed?
+
+Uma função que permite a criação de novas variáveis observáveis.
+ 
+Alternativa correta
+Uma função que retorna um valor observável que pode ser atualizado.
+ 
+O @computed retorna um valor que pode ser utilizado como qualquer outra variável, mas o retorno é um valor e não uma observável. O seu valor só é atualizado se as observáveis dentro dela são alterados.
+Alternativa correta
+É uma função que atualiza automaticamente os dados observáveis com os quais está relacionada.
+ 
+O @computed não atualiza automaticamente os dados observáveis, mas é atualizado automaticamente pelo MobX quando alguma variável observável dentro dela é atualizada.
+Alternativa correta
+Uma função que retorna um valor a partir de uma ou mais observáveis.
+ 
+O @computed é muito utilizado para devolver valores que dependem de outras observáveis, como, por exemplo, calcular valor total de compras de uma lista de itens sem precisar alterar alguma observável.
+
+@@09
+Faça como eu fiz: listas e computed
+
+Hora da prática!
+Agora é a sua vez de implementar as seguintes funcionalidades dentro do projeto:
+
+Uma lista de itens que será preenchida com os itens adicionados ao carrinho;
+Uma observável condicional para saber a quantidade de itens dentro do carrinho;
+Uma observável condicional para mostrar ou esconder o botão de “ver carrinho” na parte inferior da aplicação.
+Para fazer a implementação, é importante seguir alguns passos:
+
+Parte 1 - A Store
+Dentro do arquivo carrinho_store.dart crie a observável listaItem que deve receber uma ObservableList do tipo Item;
+Altere as ações de incrementar e decrementar a variável quantidadeCarrinho para adicionar ou remover um item da lista listaItem;
+Altere o nome da variável quantidadeCarrinho para quantidadeItem e a transforme em uma observável condicional (computed);
+O retorno da observável condicional quantidadeItem deve ser o tamanho da lista listaItem;
+Crie uma outra observável condicional chamada listaVazia que deve retornar um bool caso a lista esteja vazia ou não.
+Parte 2 - Implementando as mudanças
+Passe o objeto Item para dentro do widget de Contador;
+Dentro do contador forneça o Item para as ações que precisam de um item para adicionar à lista;
+Na Home troque a variável quantidadeCarrinho para utilizar quantidadeItem, nossa nova observável condicional;
+Ainda na Home, crie um if ternário que verifica o valor dentro da observável condicional listaVazia. Caso a lista esteja vazia, devolva um widget Container vazio. Caso a lista tenha algum item, devolva o Inkwell inteiro de “ver carrinho”.
+Vamos lá?
+
+Caso queira conferir o resultado desta aula, você pode acessar os commits de cada vídeo:
+Vídeo 1 - Listas e MobX;
+Vídeo 2 - ObservableList;
+Vídeo 3 - Computed;
+Vídeo 4 - Listas e computed.
+Bateu uma dúvida ou dificuldade? Chame a gente lá no fórum ou no discord!
+
+https://github.com/alura-cursos/2965-gerenciamento-de-estados-mobx/commit/099569427844478efac7484731ef94afb7b999cd
+
+https://github.com/alura-cursos/2965-gerenciamento-de-estados-mobx/commit/6787af2b1e96941b0f613600658c10d5210ec3d0
+
+https://github.com/alura-cursos/2965-gerenciamento-de-estados-mobx/commit/597969a4f7c594be4e56b2c6756e481c62d4a0cd
+
+https://github.com/alura-cursos/2965-gerenciamento-de-estados-mobx/commit/b345f6c64618a50cda3edaa25f79cfee864eb448
+
+@@10
+O que aprendemos?
+
+Nessa aula, você aprendeu como:
+Lidar com listas observáveis e as diferenças de uma lista comum;
+Entender observáveis condicionais e quais as suas funções;
+Criar e implementar observáveis condicionais para conferir quantidade de itens e criar interações com a pessoa usuária.
+Concluímos nossa quarta aula! Vejo você a seguir.
+
+Bons estudos!
