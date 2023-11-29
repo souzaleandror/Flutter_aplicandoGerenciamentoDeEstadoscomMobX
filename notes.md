@@ -1618,3 +1618,432 @@ Criar e implementar observáveis condicionais para conferir quantidade de itens 
 Concluímos nossa quarta aula! Vejo você a seguir.
 
 Bons estudos!
+
+#### 29/11/2023
+
+@05-Refinando o projeto
+
+@@01
+Projeto da aula anterior
+
+Você pode acompanhar o passo a passo do desenvolvimento do nosso projeto e, se preferir, pode baixar o projeto da aula anterior.
+Bons estudos!
+
+@@02
+Fazendo a soma dos produtos
+
+Anteriormente, aprendemos a criar observáveis condicionais com computed e fizemos uma feature em que um botão na parte inferior da aplicação de "Ver carrinho" só irá aparecer caso exite algum item na sacola.
+Na aplicação sem nenhum item selecionado, o botão não aparecerá, mas assim que adicionarmos algum, conseguiremos vê-lo.
+
+Desta forma, evitaremos que a pessoa usuária vá para a página de checkout sem ter nada para comprar de fato.
+
+Porém, quando adicionamos um ou vários itens, o valor da soma não estará realmente somando a quantidade de produtos no carrinho. Então, nossa próxima feature será lidarmos com essa soma.
+
+Essa é uma responsabilidade do carrinho_store.dart, que é onde termos todas as informações do carrinho de compras.
+
+Criaremos uma nova observável que será o valor total da compra, afinal queremos observar essa mudança e atualizar na tela. Após o @observable que contém a lista, criaremos outro com o tipo double chamado totalDaCompra e o inicializaremos com zero.
+
+Ele será observado na home, e precisaremos de uma action para alterarmos o valor. Ao final do código, após a última @action de removeCarrinho(), criaremos uma nova que não terá retorno, então será void com o nome atualizaTotalDaCompra.
+
+A variável totalDaCompra precisará ser atualizada em um momento específico, que é justamente quando adicionamos ou removemos um item do carrinho.
+
+A primeira coisa é fazer com que totalDaCompra comece zerada com 0, mesmo já tendo inicializado com zero. Como há várias maneiras de resolver esse problema, começaremos exibindo este 0 aparecendo na tela assim que abrirmos a aplicação, e depois atualizaremos com o que há dentro da lista.
+
+Pois quando removemos ou adicionamos algo à lista, alteramos a estrutura dela. Poderíamos subtrair o valor do item removido do total da compra já existente ou algo parecido.
+
+Mas iremos zerar tudo o que existe dentro de totalDaCompra e faremos a somatória novamente, garantindo que a lista esteja consistente e atualizada.
+
+O próximo passo será iterar na lista usando for() recebendo var i igual a 0, enquanto i for menor que listaItem.lenght, o i será somado ao final de cada iteração.
+
+Dentro, faremos totalDaCompra sendo mais e igual += a listaItem na posição de [i], pegando o preco. Desta forma, pegaremos todos os itens da lista e somaremos, mas ainda não estamos usando em nenhum lugar.
+
+Poderemos usar exatamente onde o valor sera atualizado, ou seja, em adicionaCarrinho onde chamaremos atualizaTotalDaCompra. Já na @action seguinte, adicionaremos atualizaTotalDaCompra().
+
+//código omitido
+
+abstract class _CarrinhoStore with Store {
+  @observable
+  List<Item> listaItem = ObservableList<Item>();
+
+  @observable
+  double totalDaCompra = 0;
+
+//código omitido
+
+  @action
+  void adicionaCarrinho(Item item) {
+    listaItem.add(item);
+    atualizaTotalDaCompra();
+  }
+
+  @action
+  void removeCarrinho(Item item) {
+    listaItem.remove(item);
+    atualizaTotalDaCompra();
+  }
+
+  @action
+  void atualizaTotalDaCompra() {
+    totalDaCompra = 0;
+    for(var i = 0; i < listaItem.length; i++){
+      totalDaCompra += listaItem[i].preco;
+    }
+  }
+}COPIAR CÓDIGO
+Assim, atualizaremos toda vez que um produto for adicionado ou removido.
+
+Salvaremos o arquivo e, se já tivermos o Build Runner rodando, geraremos automaticamente o carrinho_store.g.dart. Caso ainda não tenhamos rodado com build_runner watch, bastará aplicarmos o comando:
+
+flutter pub run build_runner watchCOPIAR CÓDIGO
+Assim, poderemos usar atualizaTotalDaCompra() dentro de home.dart onde está o botão "R\$ 00,00" que possui o valor total.
+
+Substituiremos essa string pela interpolação de ${} chamando a variável carrinhoStore.totalDaCompra. Usaremos valores decimais com a função toStringAsFixed() recebendo o total de casas 2 e salvaremos.
+
+//código omitido
+
+class Home extends StatelessWidget {
+  Home({Key? key}) : super(key: key);
+
+  final TextEditingController searchTextController = TextEditingController();
+
+  @override
+  Widget build(BuildContext context) {
+    final carrinhoStore = Provider.of<CarrinhoStore>(context, listen: false);
+    final BuildContext homeContext = context;
+    return SafeArea(
+                ),
+
+//código omitido
+
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: Text(
+                                  "R\$ ${carrinhoStore.totalDaCompra.toStringAsFixed(2)}",
+
+//código omitido
+
+                  ),
+                ),
+              ),
+            )
+          ],
+        ),
+      ),
+    );
+  }
+}COPIAR CÓDIGO
+No emulador, veremos o valor atualizado e, como carrega automaticamente, o valor estará zerado. Se não, usaremos hot start para zerarmos os estados da aplicação.
+
+Testaremos adicionando e removendo alguns itens e observando se os valores das somatórias estão corretos.
+
+A seguir, enviaremos todas as informações da sacola e o total da compra para a página de check-out.
+
+@@03
+Passando informações para a tela de checkout
+
+Já temos todas as informações do nosso pedido salvas no carrinho, e o total da compra calculado no botão de "var carrinho" na parte inferior da tela.
+O próximo passo será reunir esses dados dos itens e enviar para a página de checkout. No home.dart, como este botão é um InkWell, dentro da função onTap: () em Observer na linha 45, poderemos utilizar um Navigator para mandarmos as informações.
+
+Usando .push(), usaremos o context e o MaterialPageRoute() que lidará com a rota. Como pede um builder:, passaremos uma função anônima e, como retorno, passaremos a página Checkout().
+
+//código omitido
+
+class Home extends StatelessWidget {
+  Home({Key? key}) : super(key: key);
+
+  final TextEditingController searchTextController = TextEditingController();
+
+  @override
+  Widget build(BuildContext context) {
+
+//código omitido
+
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: Align(
+                alignment: Alignment.bottomCenter,
+                child: Observer(
+                  builder: (_) => 
+                  !carrinhoStore.listaVazia ? InkWell(
+                    onTap: () {
+                      Navigator.push(context, MaterialPageRoute(builder: (context){
+                        return Checkout();
+                      }));
+                    },
+
+//código omitido
+
+              ),
+            )
+          ],
+        ),
+      ),
+    );
+  }
+}COPIAR CÓDIGO
+Salvaremos e veremos a mudança na tela.
+
+Ao clicarmos em "ver carrinho", iremos para a página de checkout que está vazia e com valor zerado apesar de termos selecionado itens.
+
+De volta ao código, iremos ao checkout.dart e importaremos o provider recebendo carrinhoStore. Na primeira linha das chaves abaixo de Widget build(), escreveremos final CarrinhoStore carrinhoStore sendo igual a Provider.of passando o tipo <CarrinhoStore>(context);.
+
+Por fim, passaremos o listen para não "ouvirmos" outras mudanças que acontecem dentro do CarrinhoStore, então será false.
+
+//código omitido
+
+class Checkout extends StatelessWidget {
+  const Checkout({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final CarrinhoStore carrinhoStore = Provider.of<CarrinhoStore>(context, listen: false);
+
+//código omitido
+  }
+}COPIAR CÓDIGO
+Vamos adicionar as informações dentro da aplicação de checkout.dart.
+
+Onde temos a lista que será gerada em SilverList(), que será cada um dos itens em OrderItem(). Pedirá um item que é CarrinhoStore.listaItem[] com a posição do index.
+
+Por enquanto está com placeholder de 1 em childCount:, mas queremos que seja a quantidade real de itens da lista. Então substituiremos por carrinhoStore.listaItem.lenght.
+
+Por fim, iremos ao SliverToBoxAdapter() com o componente PaymentTotal() contendo o valor total da compra. Utilizaremos a interpolação novamente que receberá apenas um double e não uma string.
+
+Então total: será carrinhoStore.totalDaCompra que já fará o próprio toFixed.
+
+//código omitido
+
+class Checkout extends StatelessWidget {
+  const Checkout({Key? key}) : super(key: key);
+
+  @override
+
+//código omitido
+
+              SliverToBoxAdapter(child: PaymentTotal(total: carrinhoStore.totalDaCompra),),
+              SliverFillRemaining(
+
+//código omitido
+
+              )
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}COPIAR CÓDIGO
+Salvaremos o arquivo e receberemos um grande alerta de exceção.
+
+O problema é justamente no context. Traduzindo, a mensagem diz:
+
+Isso aconteceu porque você usou um BuildContext que não inclui o Provider escolhido.
+Como tudo depende do context, devemos nos perguntar qual é o contexto em que estamos trabalhando.
+
+Se voltarmos ao botão próximo à linha 48 no home.dart, estamos passando um context para dentro do Navigator, o qual é diferente do que passamos dentro do MaterialPageRoute(), como a própria IDE alerta.
+
+Se clicarmos nesta palavra context, outros lugares que também o utilizam irão se destacar, menos o que está dentro MaterialPageRoute(). Afinal, este contexto é o novo da página de checkout.
+
+Resolveremos isso passando o context da página home para dentro do nosso widget checkout. Onde temos o <CarrinhoStore>, criaremos um novo final BuildContext chamado homeContext para sabermos exatamente qual é o contexto utilizado. Em seguida, chamaremos context que é o mesmo da aplicação da página inicial.
+
+Em seguida, passaremos o homeContext para dentro da página de Checkout(). Depois criaremos esta variável dentro da página, então estamos nos antecipando. Ele será também o homeContext.
+
+//código omitido
+
+class Home extends StatelessWidget {
+  Home({Key? key}) : super(key: key);
+
+  final TextEditingController searchTextController = TextEditingController();
+
+  @override
+  Widget build(BuildContext context) {
+    final carrinhoStore = Provider.of<CarrinhoStore>(context, listen: false);
+    final BuildContext homeContext = context;
+
+//código omitido
+
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: Align(
+                alignment: Alignment.bottomCenter,
+                child: Observer(
+                  builder: (_) => 
+                  !carrinhoStore.listaVazia ? InkWell(
+                    onTap: () {
+                      Navigator.push(context, MaterialPageRoute(builder: (context){
+                        return Checkout(homeContext: homeContext);
+                      }));
+                    },
+
+//código omitido
+
+              ),
+            )
+          ],
+        ),
+      ),
+    );
+  }
+}COPIAR CÓDIGO
+Já em checkout.dart, dentro do construtor da página de checkout após a key, da linha nove, receberemos required this.homeContext.
+
+Na linha seguinte, escreveremos final BuildContext sendo homeContext. Com isso, a instância de homeContext irá para a home e conseguiremos utilizar do Provider e dizer qual o contexto que estamos usando.
+
+Ainda, dentro do Provider, temos que passar o contexto da home no lugar certo. Onde já passamos o context, substituiremos por homeContext.
+
+//código omitido
+
+class Checkout extends StatelessWidget {
+  const Checkout({Key? key, required this.homeContext}) : super(key: key);
+  final BuildContext homeContext;
+
+  @override
+  Widget build(BuildContext context) {
+    final CarrinhoStore carrinhoStore = Provider.of<CarrinhoStore>(homeContext, listen: false);
+
+//código omitido
+  }
+}COPIAR CÓDIGO
+Salvaremos o arquivo e daremos um hot restart para analisarmos as mudanças no emulador, adicionando itens ao carrinho e indo à página de "Pedidos".
+
+Já temos as imagens, valores e quantidades exibidas corretamente. Mais abaixo, na parte inferior da tela em "Confirmar", temos o valor total da compra.
+
+Se retornarmos à página inicial, o total das compras continuará sendo igual ao que temos na página de checkout.
+
+@@04
+Entendendo os dois contexts
+
+Durante o desenvolvimento da nossa aplicação, tivemos que passar informações da Store de uma página para outra. As informações da Store estavam sendo fornecidas para toda a aplicação através do Provider.
+No entanto, encontramos um problema na hora de chamar a Store dentro da página de Checkout: não recebemos as informações que estão dentro da Store do carrinho.
+
+Escolha a alternativa que melhor descreve qual é o problema e como podemos solucionar:
+
+Quando usamos um Navigator para criar uma nova rota, um novo context é gerado. Esse novo context precisa ser passado para o Provider como uma lista de contexts que ele tem acesso.
+Para resolver o problema, podemos passar o context da Home e o context da página de Checkout no momento em que criamos o Provider.
+ 
+Alternativa correta
+Quando usamos um Navigator para criar uma nova rota, o context é passado para a função anônima. Mas esse context não é passado para a tela de Checkout.
+Para resolver o problema, podemos passar o context da função anônima como parâmetro da página de Checkout.
+ 
+Alternativa correta
+Quando usamos um Navigator para criar uma nova rota, um novo context é gerado. Esse novo context não tem acesso ao Provider com a Store.
+Para resolver o problema, podemos passar o context da Home como parâmetro da página de Checkout.
+ 
+Tudo depende do contexto! Essa é uma solução válida para resolver o conflito de contextos gerado pelo Navigator.
+Alternativa correta
+Quando usamos um Navigator para criar uma nova rota, um novo context é gerado com o mesmo nome do contexto da página atual. Para evitar conflitos, o Flutter troca o valor de referência.
+Para resolver o problema, podemos trocar o nome do novo context gerado para algo diferente e utilizar esse novo valor na chamada do Provider na tela de Checkout.
+
+@@05
+Faça como eu fiz: total da compra e navegação
+
+Hora da prática!
+Agora é a sua vez de implementar as seguintes funcionalidades dentro do projeto:
+
+Calcular o total da lista de compras e mostrar no botão de “ver carrinho”;
+Passar todas as informações do carrinho para a página de checkout.
+Para fazer a implementação, é importante seguir alguns passos:
+
+Parte 1 - O total
+Crie uma nova observável totalDaCompra e inicialize ela com 0;
+Adicione uma nova ação que itera sobre a listaItem e soma os valores de cada item no carrinho;
+Chame essa nova ação dentro das ações de adicionar e remover um item do carrinho;
+Mostre essa observável no botão de “ver carrinho”.
+Parte 2 - A tela de checkout
+Dentro da tela Home, pegamos o BuildContext e guardamos em uma variável chamada homeContext;
+Chamamos o Navigator dentro da função onTap do InkWell e passamos dentro da página de Checkout o nosso homeContext;
+Na página de Checkout, receba o homeContext dentro de seu construtor;
+Crie a variável do tipo BuildContext que recebe o contexto do construtor;
+Instancie um CarrinhoStore com o Provider, passando como context o homeContext que recebemos no construtor;
+Adicione como retorno do widget SliverChildBuilderDelegate o widget OrderItem passando um carrinhoStore.listaItem[];
+Ainda no SliverList, passe dentro do childCount a observável quantidadeItem;
+Obs: Em vídeo foi utilizado carrinhoStore.listaItem.length no lugar de quantidadeItem. Ambos funcionam, mas o ideal é utilizar quantidadeItem.
+Por último, dentro do widget PaymentTotal passe a observável totalDaCompra.
+Vamos lá?
+
+Caso queira conferir o resultado desta aula, você pode acessar os seguintes commits:
+Parte 1;
+Parte 2.
+Bateu uma dúvida ou dificuldade? Chame a gente lá no fórum ou no discord!
+
+https://github.com/alura-cursos/2965-gerenciamento-de-estados-mobx/commit/6b5abb90f040599130e1f722ee2a185560772831
+
+https://github.com/alura-cursos/2965-gerenciamento-de-estados-mobx/commit/b46e8e6ff0c18895d01b7d78e892f57a3bd7bc49
+
+@@06
+Projeto final
+
+Você pode baixar ou acessar o código-fonte do projeto final.
+Aproveite para explorá-lo e revisar pontos importantes do curso.
+
+Bons estudos!
+
+https://github.com/alura-cursos/2965-gerenciamento-de-estados-mobx/archive/refs/heads/Aula5.zip
+
+@@07
+O que aprendemos?
+
+Nessa aula, você aprendeu como:
+Criar ações mais complexas e como integrar com outras ações, no caso;
+Reconhecer que limitações de bibliotecas não são problemas, mas formas de facilitar a inclusão de apenas as bibliotecas necessárias para resolver nosso problema;
+Utilizar Provider em conjunto com MobX para gerenciar estados em toda a aplicação.
+Concluímos nossa quinta e última aula! Vejo você a seguir.
+
+Bons estudos!
+
+@@08
+Recados finais
+
+Parabéns, você chegou ao fim do nosso curso. Tenho certeza que esse mergulho foi de muito aprendizado.
+Após os créditos finais do curso, você será redirecionado para uma tela na qual poderá deixar seu feedback e avaliação do curso. Sua opinião é muito importante para nós.
+
+Aproveite para conhecer a nossa comunidade no Discord da Alura e se conectar com outras pessoas com quem pode conversar, aprender e aumentar seu networking.
+
+Continue mergulhando com a gente! 🤿
+
+https://discord.com/invite/QeBdgAjXnn
+
+@@09
+Conclusão
+
+Parabéns! Você chegou ao final deste curso de MobX da Plataforma Alura!
+Neste projeto, adicionamos itens à página inicial de uma aplicação mobile e, ao clicarmos em "+", seu valor e quantidade irão aparecer na parte inferior da tela, em um botão vermelho de "ver carrinho".
+
+Caso não tenhamos selecionado nada, o botão desaparecerá. Adicionando alguns itens, conseguiremos clicar neste botão e nos direcionar para a página de checkout com o título "Pedido", onde teremos todas as informações da sacola de compras.
+
+A somatória dos valores dos itens aparecerá atualizada também ao final da lista.
+
+Aprendemos o que é MobX, os principais conceitos e técnicas para utilizarmos em nossa aplicação, trabalhamos com os @observables de @computed, que são os condicionais.
+
+Também abordamos sobre as @actions que são funções que modificarão estes @observables, além de formas de implementarmos com Provider dentro de outas telas para termos acesso global de todos os valores da aplicação.
+
+Vimos as vantagens que os gerenciadores de estados trazem, que facilita bastante nosso trabalho com variáveis mutáveis que precisam ter seus valores refletidos na tela.
+
+Convidamos a participar da nossa comunidade no Discord para interagir com outras pessoas, participar de eventos, compartilhar conhecimentos e tirar dúvidas.
+
+Até o próximo curso!
+
+@@10
+Créditos
+PRÓXIMA ATIVIDADE
+
+ Apoio ágil
+Cássio Murilo
+Apoio didático
+
+Christian Rosa
+Denize da Silva Dias Cruz
+Mayra de Oliveira
+Instrutor
+
+Matheus Alberto
+Produção audiovisual
+
+Vinicius Corrêa (Hide)
+Ariana Brito
+Samuka
+Fabricio Andreotti
+Transcrição
+
+Bruna Gonçalves
+Nyerik Scarmeloto
